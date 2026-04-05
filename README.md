@@ -11,7 +11,7 @@ MCP server that connects Claude to the Chess.com public API, giving direct acces
 | `get_games` | Games from a specific month (with filters by color/result) |
 | `analyze_month` | Full analysis: win rates by color, how games ended, rating progression |
 
-All tools have a `username` parameter that defaults to `cccarv`.
+All tools accept an optional `username` parameter. If omitted, the `CHESS_USERNAME` environment variable is used. At least one must be set.
 
 ## Prerequisites
 
@@ -21,8 +21,8 @@ All tools have a `username` parameter that defaults to `cccarv`.
 ## Installation
 
 ```bash
-git clone https://github.com/cccarv/chess-mcp.git
-cd chess-mcp
+git clone https://github.com/cccarv82/chess-mpc.git
+cd chess-mpc
 npm install
 npm run build
 ```
@@ -36,7 +36,10 @@ Add the following to your Claude Code MCP settings (`~/.claude/claude_desktop_co
   "mcpServers": {
     "chess": {
       "command": "node",
-      "args": ["/absolute/path/to/chess-mcp/dist/index.js"]
+      "args": ["/absolute/path/to/chess-mpc/dist/index.js"],
+      "env": {
+        "CHESS_USERNAME": "your-chess-com-username"
+      }
     }
   }
 }
@@ -45,8 +48,10 @@ Add the following to your Claude Code MCP settings (`~/.claude/claude_desktop_co
 Or using the Claude Code CLI:
 
 ```bash
-claude mcp add chess node /absolute/path/to/chess-mcp/dist/index.js
+claude mcp add chess node /absolute/path/to/chess-mpc/dist/index.js
 ```
+
+> Set `CHESS_USERNAME` in the `env` block so you don't need to pass it on every request.
 
 ## Usage examples
 

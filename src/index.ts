@@ -10,7 +10,15 @@ import {
   type RatingInfo,
 } from "./chess-api.js";
 
-const DEFAULT_USERNAME = "cccarv";
+function resolveUsername(provided: string | undefined): string {
+  const username = provided ?? process.env.CHESS_USERNAME ?? "";
+  if (!username) {
+    throw new Error(
+      "No username provided. Pass a username parameter or set the CHESS_USERNAME environment variable."
+    );
+  }
+  return username;
+}
 
 const server = new McpServer({
   name: "chess-mcp",
@@ -26,9 +34,10 @@ server.tool(
     username: z
       .string()
       .optional()
-      .describe(`Chess.com username (default: ${DEFAULT_USERNAME})`),
+      .describe("Chess.com username (falls back to CHESS_USERNAME env var)"),
   },
-  async ({ username = DEFAULT_USERNAME }) => {
+  async ({ username: raw }) => {
+    const username = resolveUsername(raw);
     const [profile, stats] = await Promise.all([
       getPlayerProfile(username),
       getPlayerStats(username),
@@ -36,19 +45,13 @@ server.tool(
 
     const formatRating = (info: RatingInfo | undefined) => {
       if (!info) return null;
+      const total = info.record.win + info.record.loss + info.record.draw;
       return {
         current: info.last.rating,
         best: info.best.rating,
         best_game: info.best.game,
         record: info.record,
-        win_rate:
-          info.record.win + info.record.loss + info.record.draw > 0
-            ? `${(
-                (info.record.win /
-                  (info.record.win + info.record.loss + info.record.draw)) *
-                100
-              ).toFixed(1)}%`
-            : "N/A",
+        win_rate: total > 0 ? `${((info.record.win / total) * 100).toFixed(1)}%` : "N/A",
       };
     };
 
@@ -61,12 +64,8 @@ server.tool(
               username: profile.username,
               league: profile.league,
               followers: profile.followers,
-              joined: new Date(profile.joined * 1000)
-                .toISOString()
-                .split("T")[0],
-              last_online: new Date(profile.last_online * 1000)
-                .toISOString()
-                .split("T")[0],
+              joined: new Date(profile.joined * 1000).toISOString().split("T")[0],
+              last_online: new Date(profile.last_online * 1000).toISOString().split("T")[0],
               ratings: {
                 rapid: formatRating(stats.chess_rapid),
                 blitz: formatRating(stats.chess_blitz),
@@ -99,9 +98,10 @@ server.tool(
     username: z
       .string()
       .optional()
-      .describe(`Chess.com username (default: ${DEFAULT_USERNAME})`),
+      .describe("Chess.com username (falls back to CHESS_USERNAME env var)"),
   },
-  async ({ username = DEFAULT_USERNAME }) => {
+  async ({ username: raw }) => {
+    const username = resolveUsername(raw);
     const archives = await getArchives(username);
     const formatted = archives.map((url) => {
       const parts = url.split("/");
@@ -129,7 +129,7 @@ server.tool(
     username: z
       .string()
       .optional()
-      .describe(`Chess.com username (default: ${DEFAULT_USERNAME})`),
+      .describe("Chess.com username (falls back to CHESS_USERNAME env var)"),
     result_filter: z
       .enum(["win", "loss", "draw"])
       .optional()
@@ -139,30 +139,17 @@ server.tool(
       .optional()
       .describe("Filter by color played"),
   },
-  async ({
-    year,
-    month,
-    username = DEFAULT_USERNAME,
-    result_filter,
-    color_filter,
-  }) => {
+  async ({ year, month, username: raw, result_filter, color_filter }) => {
+    const username = resolveUsername(raw);
     const games = await getGames(username, year, month);
 
     const enriched = games.map((g) => {
       const color =
-        g.white.username.toLowerCase() === username.toLowerCase()
-          ? "white"
-          : "black";
+        g.white.username.toLowerCase() === username.toLowerCase() ? "white" : "black";
       const opponent_color = color === "white" ? "black" : "white";
       const my_result = g[color].result;
       const is_win = my_result === "win";
-      const is_loss = [
-        "checkmated",
-        "timeout",
-        "resigned",
-        "abandoned",
-        "lose",
-      ].includes(my_result);
+      const is_loss = ["checkmated", "timeout", "resigned", "abandoned", "lose"].includes(my_result);
       const outcome = is_win ? "win" : is_loss ? "loss" : "draw";
 
       return {
@@ -214,9 +201,10 @@ server.tool(
     username: z
       .string()
       .optional()
-      .describe(`Chess.com username (default: ${DEFAULT_USERNAME})`),
+      .describe("Chess.com username (falls back to CHESS_USERNAME env var)"),
   },
-  async ({ year, month, username = DEFAULT_USERNAME }) => {
+  async ({ year, month, username: raw }) => {
+    const username = resolveUsername(raw);
     const games = await getGames(username, year, month);
 
     if (games.length === 0) {
@@ -252,18 +240,10 @@ server.tool(
 
     for (const g of sorted) {
       const color =
-        g.white.username.toLowerCase() === username.toLowerCase()
-          ? "white"
-          : "black";
+        g.white.username.toLowerCase() === username.toLowerCase() ? "white" : "black";
       const my_result = g[color].result;
       const is_win = my_result === "win";
-      const is_loss = [
-        "checkmated",
-        "timeout",
-        "resigned",
-        "abandoned",
-        "lose",
-      ].includes(my_result);
+      const is_loss = ["checkmated", "timeout", "resigned", "abandoned", "lose"].includes(my_result);
       const outcome = is_win ? "wins" : is_loss ? "losses" : "draws";
       const my_rating = g[color].rating;
 
