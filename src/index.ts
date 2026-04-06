@@ -357,7 +357,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         g.white.username.toLowerCase() === username.toLowerCase() ? "white" : "black";
       const my_result = g[color].result;
       const outcome = classifyResult(my_result);
-      const outcomeKey = `${outcome}s` as "wins" | "losses" | "draws";
+      const outcomeKey = outcome === "win" ? "wins" : outcome === "loss" ? "losses" : "draws";
       const my_rating = g[color].rating;
 
       stats.total++;

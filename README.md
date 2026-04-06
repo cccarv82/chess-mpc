@@ -30,27 +30,31 @@ npm run build
 
 ## Add to Claude Code
 
-```json
-{
-  "mcpServers": {
-    "chess": {
-      "command": "node",
-      "args": ["E:/chess-mpc/dist/index.js"],
-      "env": {
-        "CHESS_USERNAME": "your-chess-com-username"
-      }
-    }
-  }
-}
-```
-
-> **Windows path note:** Always use forward slashes (`E:/chess-mpc/dist/index.js`), not backslashes. Backslashes cause silent startup failure.
-
-Or via Claude Code CLI:
+The recommended way is via the Claude Code CLI — this writes to the correct registry file regardless of platform:
 
 ```bash
-claude mcp add chess node "E:/chess-mpc/dist/index.js" --env CHESS_USERNAME=your-username
+claude mcp add chess node "/absolute/path/to/chess-mpc/dist/index.js" -e CHESS_USERNAME=your-username
 ```
+
+> **Windows + fnm/nvm users:** `node` may not resolve when Claude Code spawns the server (GUI apps don't inherit shell PATH). Use the absolute path to your node executable instead:
+>
+> ```bash
+> # Find your node path
+> which node    # e.g. /c/Users/You/AppData/Roaming/fnm/node-versions/v20.20.1/installation/node.exe
+>
+> claude mcp add chess "C:/Users/You/AppData/Roaming/fnm/node-versions/v20.20.1/installation/node.exe" "E:/chess-mpc/dist/index.js" -e CHESS_USERNAME=your-username
+> ```
+
+Verify the server is connected:
+
+```bash
+claude mcp list
+# chess: ... - ✓ Connected
+```
+
+### Manual config (alternative)
+
+If you prefer editing config files directly, add to `~/.claude.json` under your project's `mcpServers` key — but the CLI method above is simpler and less error-prone.
 
 ## Usage examples
 
